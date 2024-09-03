@@ -2,6 +2,22 @@ import os,sys,argparse
 import SimpleITK as sitk
 import pandas as pd
 
+def get_stats_dict( stat_filter, i, d ):
+    dat = {}
+    dat['nvoxels'] = stat_filter.GetNumberOfPixels(i)
+    dat['physical_volume_mm'] = stat_filter.GetPhysicalSize(i)
+    dat['physical_area_mm'] = dat['physical_volume_mm'] / d
+    dat['mean'] = stat_filter.GetMean(i)
+    dat['median'] = stat_filter.GetMedian(i)
+    dat['minimum'] = stat_filter.GetMinimum(i)
+    dat['maximum'] = stat_filter.GetMaximum(i)
+    dat['sd'] = stat_filter.GetStandardDeviation(i)
+    dat['onborder'] = 1 # always on border for slice data
+    
+
+
+    return(dat)
+ 
 def main():
     parser = argparse.ArgumentParser(description='Get label areas at a slice of a label map')
     parser.add_argument('-i', '--input', type=str, required=True, help='input CT volume')
@@ -67,17 +83,30 @@ def main():
         row2={'id': parts[0], 'accession': parts[1], 'series_number': parts[2], 'series_name': series_name,'system': args.metadata, 'label':l, 'measure': 'shape', 'metric': 'physical_area_mm', 'value':0.0}
         row3={'id': parts[0], 'accession': parts[1], 'series_number': parts[2], 'series_name': series_name,'system': args.metadata, 'label':l, 'measure': 'shape', 'metric': 'physical_volume_mm', 'value':0.0}
         row4={'id': parts[0], 'accession': parts[1], 'series_number': parts[2], 'series_name': series_name,'system': args.metadata, 'label':l, 'measure': 'intensity', 'metric': 'mean', 'value':0.0}
-
+        row5={'id': parts[0], 'accession': parts[1], 'series_number': parts[2], 'series_name': series_name, 'system': args.metadata, 'label':l, 'measure': 'intensity', 'metric': 'median', 'value': 0}
+        row6={'id': parts[0], 'accession': parts[1], 'series_number': parts[2], 'series_name': series_name,'system': args.metadata, 'label':l, 'measure': 'intensity', 'metric': 'maximum', 'value':0.0}
+        row7={'id': parts[0], 'accession': parts[1], 'series_number': parts[2], 'series_name': series_name,'system': args.metadata, 'label':l, 'measure': 'intensity', 'metric': 'minimum', 'value':0.0}
+        row8={'id': parts[0], 'accession': parts[1], 'series_number': parts[2], 'series_name': series_name,'system': args.metadata, 'label':l, 'measure': 'intensity', 'metric': 'sd', 'value':0.0}
+ 
         if slice_stats.HasLabel(l):
-            row1['value'] = slice_stats.GetNumberOfPixels(l)
-            row2['value'] = slice_stats.GetPhysicalSize(l)
-            row3['value'] = slice_stats.GetPhysicalSize(l) / image.GetSpacing()[args.dimension]
-            row4['value'] = slice_stats.GetMean(l)
+            stats = get_stats_dict(slice_stats, l, image.GetSpacing()[args.dimension])
+            row1['value'] = stats['nvoxels']
+            row2['value'] = stats['physical_volume_mm']
+            row3['value'] = stats['physical_area_mm']
+            row4['value'] = stats['mean']
+            row5['value'] = stats['median']
+            row6['value'] = stats['maximum']
+            row7['value'] = stats['minimum']
+            row8['value'] = stats['sd']
         dat.append(row1)
         dat.append(row2)
         dat.append(row3)
         dat.append(row4)
-    
+        dat.append(row5)
+        dat.append(row6)
+        dat.append(row7)
+        dat.append(row8)    
+
     df = pd.DataFrame(dat)
     if args.verbose:
         print(df)
