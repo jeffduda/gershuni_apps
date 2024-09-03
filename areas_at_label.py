@@ -27,7 +27,7 @@ def main():
     parser.add_argument('-c', '--centroid', type=int, required=True, help='label to get slice from')
     parser.add_argument('-o', '--output', type=str, required=True, help='output csv file with areas')
     parser.add_argument('-d', '--dimension', type=int, default=2, required=False, help='dimension to get slice from')
-    parser.add_argument('-m', '--metadata', type=str, required=True, help='subject_id session_id label_system')
+    parser.add_argument('-m', '--metadata', type=str, required=False, help='subject_id session_id label_system')
     parser.add_argument('-v', '--verbose', action='store_true', help='verbose output')
     args = parser.parse_args()
 
@@ -86,14 +86,14 @@ def main():
         system=label_df.iat[i,0]
         l=int(label_df.iat[i,1])
         name=label_df.iat[i,2]
-        row1={'id': parts[0], 'accession': parts[1], 'series_number': parts[2], 'series_name': series_name, 'system': args.metadata, 'label':l, 'name': name, 'measure': 'shape', 'metric': 'nvoxels', 'value': 0}
-        row2={'id': parts[0], 'accession': parts[1], 'series_number': parts[2], 'series_name': series_name,'system': args.metadata, 'label':l, 'name': name, 'measure': 'shape', 'metric': 'physical_area_mm', 'value':0.0}
-        row3={'id': parts[0], 'accession': parts[1], 'series_number': parts[2], 'series_name': series_name,'system': args.metadata, 'label':l, 'name': name, 'measure': 'shape', 'metric': 'physical_volume_mm', 'value':0.0}
-        row4={'id': parts[0], 'accession': parts[1], 'series_number': parts[2], 'series_name': series_name,'system': args.metadata, 'label':l, 'name': name, 'measure': 'intensity', 'metric': 'mean', 'value':0.0}
-        row5={'id': parts[0], 'accession': parts[1], 'series_number': parts[2], 'series_name': series_name, 'system': args.metadata, 'label':l, 'name': name, 'measure': 'intensity', 'metric': 'median', 'value': 0}
-        row6={'id': parts[0], 'accession': parts[1], 'series_number': parts[2], 'series_name': series_name,'system': args.metadata, 'label':l, 'name': name,  'measure': 'intensity', 'metric': 'maximum', 'value':0.0}
-        row7={'id': parts[0], 'accession': parts[1], 'series_number': parts[2], 'series_name': series_name,'system': args.metadata, 'label':l, 'name': name,  'measure': 'intensity', 'metric': 'minimum', 'value':0.0}
-        row8={'id': parts[0], 'accession': parts[1], 'series_number': parts[2], 'series_name': series_name,'system': args.metadata, 'label':l, 'name': name,  'measure': 'intensity', 'metric': 'sd', 'value':0.0}
+        row1={'id': parts[0], 'accession': parts[1], 'series_number': parts[2], 'series_name': series_name, 'system': system, 'label':l, 'name': name, 'measure': 'shape', 'metric': 'nvoxels', 'value': 0}
+        row2={'id': parts[0], 'accession': parts[1], 'series_number': parts[2], 'series_name': series_name,'system': system, 'label':l, 'name': name, 'measure': 'shape', 'metric': 'physical_area_mm', 'value':0.0}
+        row3={'id': parts[0], 'accession': parts[1], 'series_number': parts[2], 'series_name': series_name,'system': system, 'label':l, 'name': name, 'measure': 'shape', 'metric': 'physical_volume_mm', 'value':0.0}
+        row4={'id': parts[0], 'accession': parts[1], 'series_number': parts[2], 'series_name': series_name,'system': system, 'label':l, 'name': name, 'measure': 'intensity', 'metric': 'mean', 'value':0.0}
+        row5={'id': parts[0], 'accession': parts[1], 'series_number': parts[2], 'series_name': series_name, 'system': system, 'label':l, 'name': name, 'measure': 'intensity', 'metric': 'median', 'value': 0}
+        row6={'id': parts[0], 'accession': parts[1], 'series_number': parts[2], 'series_name': series_name,'system': system, 'label':l, 'name': name,  'measure': 'intensity', 'metric': 'maximum', 'value':0.0}
+        row7={'id': parts[0], 'accession': parts[1], 'series_number': parts[2], 'series_name': series_name,'system': system, 'label':l, 'name': name,  'measure': 'intensity', 'metric': 'minimum', 'value':0.0}
+        row8={'id': parts[0], 'accession': parts[1], 'series_number': parts[2], 'series_name': series_name,'system': system, 'label':l, 'name': name,  'measure': 'intensity', 'metric': 'sd', 'value':0.0}
  
         if slice_stats.HasLabel(l):
             stats = get_stats_dict(slice_stats, l, image.GetSpacing()[args.dimension])
@@ -119,8 +119,6 @@ def main():
         print(df)
 
     df.to_csv(args.output, index=False)
-
-
 
 if __name__ == '__main__':
     main()
