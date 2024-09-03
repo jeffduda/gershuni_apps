@@ -4,7 +4,8 @@ import pandas as pd
 
 def main():
     parser = argparse.ArgumentParser(description='Get label areas at a slice of a label map')
-    parser.add_argument('-i', '--input', type=str, required=True, help='input image with labels to get area from')
+    parser.add_argument('-i', '--input', type=str, required=True, help='input CT volume')
+    parser.add_argument('-s', '--segmentation', type=str, required=True, help="Labels to measure")
     parser.add_argument('-r', '--reference', type=str, required=True, help='input image with label to choose the slice')
     parser.add_argument('-l', '--labels', type=int, required=True, nargs='+', action='append', help='labels to get area from')
     parser.add_argument('-c', '--centroid', type=int, required=True, help='label to get slice from')
@@ -16,6 +17,7 @@ def main():
 
     # Load the input images
     image = sitk.ReadImage(args.input)
+    seg = sitk.ReadImage(args.segmentation)
     reference = sitk.ReadImage(args.reference)
 
     naming=os.path.basename(args.input)
@@ -47,11 +49,13 @@ def main():
     elif args.dimension == 1:
         index=[0,slice_idx,0]
         size=[image.GetSize()[0],0,image.GetSize()[2]]
-    slice = sitk.Extract(image, size=size, index=index)
+    img_slice = sitk.Extract(image, size=size, index=index)
+    seg_slice = sitk.Extract(seg, size=size, index=index)
 
     # Get shape stats for labels in the slice
-    slice_stats = sitk.LabelShapeStatisticsImageFilter()
-    slice_stats.Execute(slice)
+    #slice_stats = sitk.LabelShapeStatisticsImageFilter()
+    slice_stats = sitk.LabelIntensityStatisticsImageFilter()
+    slice_stats.Execute(seg_slice, img_slice)
 
     # flatten label list
     label_list = [ x for sublist in args.labels for x in sublist ]
@@ -62,13 +66,17 @@ def main():
         row1={'id': parts[0], 'accession': parts[1], 'series_number': parts[2], 'series_name': series_name, 'system': args.metadata, 'label':l, 'measure': 'shape', 'metric': 'nvoxels', 'value': 0}
         row2={'id': parts[0], 'accession': parts[1], 'series_number': parts[2], 'series_name': series_name,'system': args.metadata, 'label':l, 'measure': 'shape', 'metric': 'physical_area_mm', 'value':0.0}
         row3={'id': parts[0], 'accession': parts[1], 'series_number': parts[2], 'series_name': series_name,'system': args.metadata, 'label':l, 'measure': 'shape', 'metric': 'physical_volume_mm', 'value':0.0}
+        row4={'id': parts[0], 'accession': parts[1], 'series_number': parts[2], 'series_name': series_name,'system': args.metadata, 'label':l, 'measure': 'intensity', 'metric': 'mean', 'value':0.0}
+
         if slice_stats.HasLabel(l):
             row1['value'] = slice_stats.GetNumberOfPixels(l)
             row2['value'] = slice_stats.GetPhysicalSize(l)
             row3['value'] = slice_stats.GetPhysicalSize(l) / image.GetSpacing()[args.dimension]
+            row4['value'] = slice_stats.GetMean(l)
         dat.append(row1)
         dat.append(row2)
         dat.append(row3)
+        dat.append(row4)
     
     df = pd.DataFrame(dat)
     if args.verbose:
