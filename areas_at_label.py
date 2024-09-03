@@ -23,7 +23,7 @@ def main():
     parser.add_argument('-i', '--input', type=str, required=True, help='input CT volume')
     parser.add_argument('-s', '--segmentation', type=str, required=True, help="Labels to measure")
     parser.add_argument('-r', '--reference', type=str, required=True, help='input image with label to choose the slice')
-    parser.add_argument('-l', '--labels', type=int, required=True, nargs='+', action='append', help='labels to get area from')
+    parser.add_argument('-l', '--labels', type=str, required=True, help='csv with: system,label_number,label_name')
     parser.add_argument('-c', '--centroid', type=int, required=True, help='label to get slice from')
     parser.add_argument('-o', '--output', type=str, required=True, help='output csv file with areas')
     parser.add_argument('-d', '--dimension', type=int, default=2, required=False, help='dimension to get slice from')
@@ -35,6 +35,9 @@ def main():
     image = sitk.ReadImage(args.input)
     seg = sitk.ReadImage(args.segmentation)
     reference = sitk.ReadImage(args.reference)
+
+    label_df = pd.read_csv(args.labels)
+
 
     naming=os.path.basename(args.input)
     naming = naming.split('.')[0]
@@ -74,19 +77,23 @@ def main():
     slice_stats.Execute(seg_slice, img_slice)
 
     # flatten label list
-    label_list = [ x for sublist in args.labels for x in sublist ]
+    #label_list = [ x for sublist in args.labels for x in sublist ]
 
     dat=[]
     # "id","accession","series_number","series_name","system","label","number","calculator","measure","metric","value"
-    for l in label_list:
-        row1={'id': parts[0], 'accession': parts[1], 'series_number': parts[2], 'series_name': series_name, 'system': args.metadata, 'label':l, 'measure': 'shape', 'metric': 'nvoxels', 'value': 0}
-        row2={'id': parts[0], 'accession': parts[1], 'series_number': parts[2], 'series_name': series_name,'system': args.metadata, 'label':l, 'measure': 'shape', 'metric': 'physical_area_mm', 'value':0.0}
-        row3={'id': parts[0], 'accession': parts[1], 'series_number': parts[2], 'series_name': series_name,'system': args.metadata, 'label':l, 'measure': 'shape', 'metric': 'physical_volume_mm', 'value':0.0}
-        row4={'id': parts[0], 'accession': parts[1], 'series_number': parts[2], 'series_name': series_name,'system': args.metadata, 'label':l, 'measure': 'intensity', 'metric': 'mean', 'value':0.0}
-        row5={'id': parts[0], 'accession': parts[1], 'series_number': parts[2], 'series_name': series_name, 'system': args.metadata, 'label':l, 'measure': 'intensity', 'metric': 'median', 'value': 0}
-        row6={'id': parts[0], 'accession': parts[1], 'series_number': parts[2], 'series_name': series_name,'system': args.metadata, 'label':l, 'measure': 'intensity', 'metric': 'maximum', 'value':0.0}
-        row7={'id': parts[0], 'accession': parts[1], 'series_number': parts[2], 'series_name': series_name,'system': args.metadata, 'label':l, 'measure': 'intensity', 'metric': 'minimum', 'value':0.0}
-        row8={'id': parts[0], 'accession': parts[1], 'series_number': parts[2], 'series_name': series_name,'system': args.metadata, 'label':l, 'measure': 'intensity', 'metric': 'sd', 'value':0.0}
+    for i in range(label_df.shape[0]):
+        print(i)
+        system=label_df.iat[i,0]
+        l=int(label_df.iat[i,1])
+        name=label_df.iat[i,2]
+        row1={'id': parts[0], 'accession': parts[1], 'series_number': parts[2], 'series_name': series_name, 'system': args.metadata, 'label':l, 'name': name, 'measure': 'shape', 'metric': 'nvoxels', 'value': 0}
+        row2={'id': parts[0], 'accession': parts[1], 'series_number': parts[2], 'series_name': series_name,'system': args.metadata, 'label':l, 'name': name, 'measure': 'shape', 'metric': 'physical_area_mm', 'value':0.0}
+        row3={'id': parts[0], 'accession': parts[1], 'series_number': parts[2], 'series_name': series_name,'system': args.metadata, 'label':l, 'name': name, 'measure': 'shape', 'metric': 'physical_volume_mm', 'value':0.0}
+        row4={'id': parts[0], 'accession': parts[1], 'series_number': parts[2], 'series_name': series_name,'system': args.metadata, 'label':l, 'name': name, 'measure': 'intensity', 'metric': 'mean', 'value':0.0}
+        row5={'id': parts[0], 'accession': parts[1], 'series_number': parts[2], 'series_name': series_name, 'system': args.metadata, 'label':l, 'name': name, 'measure': 'intensity', 'metric': 'median', 'value': 0}
+        row6={'id': parts[0], 'accession': parts[1], 'series_number': parts[2], 'series_name': series_name,'system': args.metadata, 'label':l, 'name': name,  'measure': 'intensity', 'metric': 'maximum', 'value':0.0}
+        row7={'id': parts[0], 'accession': parts[1], 'series_number': parts[2], 'series_name': series_name,'system': args.metadata, 'label':l, 'name': name,  'measure': 'intensity', 'metric': 'minimum', 'value':0.0}
+        row8={'id': parts[0], 'accession': parts[1], 'series_number': parts[2], 'series_name': series_name,'system': args.metadata, 'label':l, 'name': name,  'measure': 'intensity', 'metric': 'sd', 'value':0.0}
  
         if slice_stats.HasLabel(l):
             stats = get_stats_dict(slice_stats, l, image.GetSpacing()[args.dimension])
